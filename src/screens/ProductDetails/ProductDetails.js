@@ -11,12 +11,13 @@ import {
   SafeAreaView,
   Animated,
   Share,
+  Alert
 } from "react-native";
 import Images from "../../assets/Images";
 import { useNavigation } from "@react-navigation/native";
 import { addToWishlist } from "../../redux/wishlistSlice";
 import { useDispatch } from "react-redux";
-import { addToCart } from "../../redux/cartSlice";
+import { addToCart, setBuyNowItem } from "../../redux/cartSlice";
 
 const ProductDetailsScreen = ({ route }) => {
   const { product } = route.params;
@@ -29,16 +30,44 @@ const ProductDetailsScreen = ({ route }) => {
   const handleNavigateWishlist = () => {
     dispatch(addToWishlist(product));
     alert(`${product.title} added to wishlist!`);
-    navigation.navigate('Wishlist')
+    // navigation.navigate('Wishlist')
   }
 
   const handleNavigateAddToCart = () => {
-    dispatch(addToCart(product));
-    alert(`${product.title} added to Cart!`);
-    navigation.navigate('Cart')
-  }
+    dispatch(addToCart({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.image,
+      quantity: 1
+    }));
+    Alert.alert(
+      "Added to Cart",
+      `${product.title} has been added to your cart`,
+      [
+        {
+          text: "Continue Shopping",
+          style: "cancel"
+        },
+        {
+          text: "View Cart",
+          onPress: () => navigation.navigate('Cart')
+        }
+      ]
+    );
+  };
 
-  // Header animation
+  const handleNavigateToBuyNow = () => {
+    dispatch(setBuyNowItem({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.image,
+      quantity: 1
+    }));
+    navigation.navigate('Checkout');
+  };
+  
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [0, 1],
@@ -164,9 +193,9 @@ const ProductDetailsScreen = ({ route }) => {
           </TouchableOpacity>
         </View>
 
-        {/* <TouchableOpacity style={styles.buyNowButton} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.buyNowButton} activeOpacity={0.8} onPress={handleNavigateToBuyNow}>
           <Text style={styles.buyNowButtonText}>Buy Now</Text>
-        </TouchableOpacity> */}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -227,7 +256,7 @@ const styles = StyleSheet.create({
   },
   shareButtonText: {
     fontSize: 16,
-    color: "#6200ee",
+    color: "#00eda6",
     fontWeight: "500",
   },
   imageContainer: {
@@ -378,12 +407,12 @@ const styles = StyleSheet.create({
     }),
   },
   addToCartButtonText: {
-    color: "black",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "600",
   },
   buyNowButton: {
-    backgroundColor: "#FF6347",
+    backgroundColor: "#FFC300",
     borderRadius: 8,
     paddingVertical: 17,
     marginHorizontal: 25,
@@ -401,7 +430,7 @@ const styles = StyleSheet.create({
     }),
   },
   buyNowButtonText: {
-    color: "#fff",
+    color: "black",
     fontSize: 16,
     fontWeight: "600",
   },

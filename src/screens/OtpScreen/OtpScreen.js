@@ -57,7 +57,7 @@ const OtpScreen = () => {
   };
 
   const handleVerify = () => {
-    navigation.navigate('HomeDrawer');
+    navigation.navigate('MainApp');
     if (otp.some(digit => digit === '')) {
       triggerShakeAnimation();
       return;

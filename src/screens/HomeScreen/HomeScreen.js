@@ -85,6 +85,10 @@ const HomeScreen = ({ navigation }) => {
     return category;
   };
 
+  const handlenavigateToProfile = () => {
+    navigation.navigate('Profile');
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -97,10 +101,12 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           {/* Logo */}
+          <TouchableOpacity onPress={handlenavigateToProfile}>
           <Image 
             source={Images.KalaiLogo} 
             style={styles.KalaiLogoHeader}
           />
+          </TouchableOpacity>
 
           {/* Search Input */}
           <View style={styles.searchWrapper}>

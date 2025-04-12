@@ -1,110 +1,62 @@
-import React,{useEffect} from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, Dimensions, Platform, Alert } from 'react-native';
-import { useSelector } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
+  ScrollView, 
+  TextInput, 
+  Dimensions, 
+  Platform, 
+  Alert 
+} from 'react-native';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Images from '../../assets/Images';
-import { useDispatch } from 'react-redux';
 import { addOrder, clearOrders } from '../../redux/orderSlice';
-import { clearCart } from '../../redux/cartSlice';
+// import { clearCart, clearBuyNowItem } from '../../redux/cartSlice'; // Import cart actions
+import { clearCart, clearBuyNow } from '../../redux/cartSlice';
 
 const { width, height } = Dimensions.get('window');
 
-const CheckoutScreen = (route) => {
+const CheckoutScreen = () => {
   const navigation = useNavigation();
-  const cartItems = useSelector(state => state.cart.items);
-  const subtotal = useSelector(state => state.cart.total);
-  const totalAmount = useSelector(state => state.cart.total);
+  const dispatch = useDispatch();
+  
+  // Get both cart items and buyNowItem from Redux store
+  const { items: cartItems, buyNowItem } = useSelector(state => state.cart);
+  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [name, setName] = useState('');
+
+  // Determine which items to display based on flow
+  const itemsToCheckout = buyNowItem ? [buyNowItem] : cartItems;
+  
+  // Calculate order totals
+  const subtotal = itemsToCheckout.reduce(
+    (sum, item) => sum + (item.price * item.quantity), 
+    0
+  );
   const shipping = 5.99;
   const tax = subtotal * 0.1; // 10% tax
   const total = subtotal + shipping + tax;
-  const dispatch = useDispatch();
-  
-
-  const [paymentMethod, setPaymentMethod] = React.useState('card');
-  const [cardNumber, setCardNumber] = React.useState('');
-  const [expiry, setExpiry] = React.useState('');
-  const [cvv, setCvv] = React.useState('');
-  const [name, setName] = React.useState('');
-
-  // const handlePlaceOrder = () => {
-  //   Alert.alert(
-  //     'Confirm Order',
-  //     `Total: ${total.toFixed(2)}\n\nProceed with Payment?`,
-  //     [
-  //       { text: 'Cancel', style: 'cancel' },
-  //       {
-  //         text: 'ok',
-  //       onPress: () => {
-  //         navigation.navigate('OrderConfirmation', {
-  //           cartItems: cartItems,
-  //           totalAmount: totalAmount,
-  //           shippingFee: 5.99,
-  //           grandTotal: totalAmount + 5.99
-  //         });
-  //       }
-  //     }
-  //     ]
-  //   );
-  // };
-
-  // useEffect(() => {
-  //   const orderData = {
-  //     // id: orderNumber,
-  //     date: new Date().toISOString(),
-  //     items: cartItems,
-  //     subtotal: totalAmount,
-  //     shipping: 5.99,
-  //     total: totalAmount + 5.99,
-  //     status: "processing",
-  //     // deliveryDate: deliveryDate.toISOString(),
-  //     paymentMethod: "Credit Card" // You can make this dynamic
-  //   };
-
-  //   dispatch(addOrder(orderData));
-  // }, []);
-
-  // useEffect(() => {
-  //   const orderData = {
-  //     orderId: `ORD-${Date.now()}`,
-  //     date: new Date().toISOString(),
-  //     items: cartItems.map(item => ({
-  //       productId: item.id,
-  //       title: item.title,
-  //       price: item.price,
-  //       quantity: item.quantity,
-  //       image: item.image,
-  //       description: item.description || '', 
-  //       category: item.category || '', 
-  //       brand: item.brand || '', 
-  //       color: item.color || '', 
-  //       size: item.size || '' 
-  //     })),
-  //     subtotal: totalAmount,
-  //     shipping: shipping,
-  //     tax: tax,
-  //     total: total,
-  //     status: "processing",
-  //     paymentMethod: paymentMethod, 
-  //     deliveryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), 
-  //   };
-  
-  //   dispatch(addOrder(orderData));
-  //   // dispatch(clearOrders(orderData));
-  // }, [cartItems, totalAmount, shipping, tax, total, paymentMethod, dispatch]);
 
   const handlePlaceOrder = () => {
     Alert.alert(
       'Confirm Order',
-      `Total: ${total.toFixed(2)}\n\nProceed with Payment?`,
+      `Total: $${total.toFixed(2)}\n\nProceed with payment?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'OK',
+          text: 'Confirm',
           onPress: () => {
             const orderData = {
               orderId: `ORD-${Date.now()}`,
               date: new Date().toISOString(),
-              items: cartItems.map(item => ({
+              items: itemsToCheckout.map(item => ({
                 productId: item.id,
                 title: item.title,
                 price: item.price,
@@ -112,34 +64,53 @@ const CheckoutScreen = (route) => {
                 image: item.image,
                 description: item.description || '',
                 category: item.category || '',
-                brand: item.brand || '',
-                color: item.color || '',
-                size: item.size || ''
               })),
-              subtotal: totalAmount,
-              shipping: 5.99,
-              tax: 0, 
-              total: totalAmount + 5.99,
+              subtotal: subtotal,
+              shipping: shipping,
+              tax: tax,
+              total: total,
               status: "processing",
               paymentMethod: paymentMethod,
               deliveryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
             };
-  
-            dispatch(addOrder(orderData)); 
-            // dispatch(clearCart()); 
-  
+
+            dispatch(addOrder(orderData));
+            
+            if (buyNowItem) {
+              dispatch(clearBuyNow());
+            } else {
+              dispatch(clearCart());
+            }
+
             navigation.navigate('OrderConfirmation', {
-              cartItems: cartItems,
-              totalAmount: totalAmount,
-              shippingFee: 5.99,
-              grandTotal: totalAmount + 5.99
+              order: orderData,
+              isBuyNowFlow: !!buyNowItem
             });
           }
         }
       ]
     );
   };
-  
+
+  // Validate card details when payment method is card
+  const validatePayment = () => {
+    if (paymentMethod === 'card') {
+      if (!cardNumber || !expiry || !cvv || !name) {
+        Alert.alert('Error', 'Please fill all card details');
+        return false;
+      }
+      if (cardNumber.length < 16) {
+        Alert.alert('Error', 'Please enter a valid card number');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handlePaymentAndPlaceOrder = () => {
+    if (!validatePayment()) return;
+    handlePlaceOrder();
+  };
 
   return (
     <View style={styles.container}>
@@ -159,14 +130,19 @@ const CheckoutScreen = (route) => {
           </View>
         </View>
 
+        {/* Order Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Items</Text>
-          {cartItems.map((item) => (
+          <Text style={styles.sectionTitle}>
+            {buyNowItem ? 'Your Item' : `Order Items (${itemsToCheckout.length})`}
+          </Text>
+          {itemsToCheckout.map((item) => (
             <View key={item.id} style={styles.cartItem}>
               <Image source={{ uri: item.image }} style={styles.itemImage} />
               <View style={styles.itemDetails}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
-                <Text style={styles.itemPrice}>${item.price.toFixed(2)} × {item.quantity}</Text>
+                <Text style={styles.itemPrice}>
+                  ${item.price.toFixed(2)} × {item.quantity}
+                </Text>
               </View>
               <Text style={styles.itemTotal}>
                 ${(item.price * item.quantity).toFixed(2)}
@@ -216,6 +192,7 @@ const CheckoutScreen = (route) => {
                 value={cardNumber}
                 onChangeText={setCardNumber}
                 placeholderTextColor="#999"
+                maxLength={16}
               />
               <View style={styles.row}>
                 <TextInput
@@ -232,6 +209,7 @@ const CheckoutScreen = (route) => {
                   value={cvv}
                   onChangeText={setCvv}
                   placeholderTextColor="#999"
+                  maxLength={3}
                 />
               </View>
               <TextInput
@@ -269,14 +247,20 @@ const CheckoutScreen = (route) => {
 
       {/* Checkout Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.checkoutButton} onPress={handlePlaceOrder}>
-          <Text style={styles.checkoutButtonText}>Place Order</Text>
+        <TouchableOpacity 
+          style={styles.checkoutButton} 
+          onPress={handlePaymentAndPlaceOrder}
+        >
+          <Text style={styles.checkoutButtonText}>
+            {buyNowItem ? 'Buy Now' : 'Place Order'}
+          </Text>
           <Text style={styles.checkoutButtonPrice}>${total.toFixed(2)}</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -336,7 +320,7 @@ const styles = StyleSheet.create({
     marginTop: height * 0.01,
   },
   changeButtonText: {
-    color: '#00eda6',
+    color: '#0000FF',
     fontSize: width * 0.035,
     fontWeight: '600',
   },
@@ -383,7 +367,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   paymentOptionSelected: {
-    borderColor: '#00eda6',
+    borderColor: '#6200ee',
     backgroundColor: '#f5f0ff',
   },
   paymentIcon: {
@@ -402,7 +386,7 @@ const styles = StyleSheet.create({
     width: width * 0.04,
     height: width * 0.04,
     borderRadius: width * 0.02,
-    backgroundColor: '#00eda6',
+    backgroundColor: '#6200ee',
   },
   cardForm: {
     marginTop: height * 0.02,
@@ -445,7 +429,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: width * 0.045,
     fontWeight: 'bold',
-    color: '#00eda6',
+    color: '#0000FF',
   },
   footer: {
     position: 'absolute',
@@ -463,7 +447,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   checkoutButton: {
-    backgroundColor: '#00eda6', 
+    backgroundColor: '#0000FF',
     borderRadius: width * 0.02,
     padding: width * 0.04,
     flexDirection: 'row',
@@ -471,12 +455,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkoutButtonText: {
-    color: 'black',
+    color: '#fff',
     fontSize: width * 0.045,
     fontWeight: 'bold',
   },
   checkoutButtonPrice: {
-    color: 'black',
+    color: '#fff',
     fontSize: width * 0.045,
     fontWeight: 'bold',
   },
